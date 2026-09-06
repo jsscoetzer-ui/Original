@@ -45,6 +45,13 @@ jobs:
         working-directory: fynalio-android
         run: gradle --no-daemon --stacktrace assembleRelease
 
+      - name: Verify installability and signing certificate
+        run: |
+          test -s fynalio-android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs fynalio-android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging fynalio-android/app/build/outputs/apk/release/app-release.apk | grep -E "^package:|^application-label:|^sdkVersion:|^targetSdkVersion:"
+          sha256sum fynalio-android/app/build/outputs/apk/release/app-release.apk
+
       - name: Prepare artifact
         run: cp fynalio-android/app/build/outputs/apk/release/app-release.apk Fynalio-v0.1-beta.apk
 
