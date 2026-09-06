@@ -26,8 +26,8 @@ jobs:
           sed -i 's/compileSdk = 37/compileSdk = 36/' source/app/build.gradle.kts
           sed -i 's/targetSdk = 37/targetSdk = 36/' source/app/build.gradle.kts
           sed -i 's/io.github.tdlibx:td-android:1.8.56-RC10/io.github.tdlibx:td-android:1.8.56-RC9/' source/app/build.gradle.kts
-          sed -i 's/androidx.compose:compose-bom:2026.06.01/androidx.compose:compose-bom:2025.12.00/' source/app/build.gradle.kts
-          sed -i 's/androidx.activity:activity-compose:1.12.0/androidx.activity:activity-compose:1.11.0/' source/app/build.gradle.kts
+          sed -i 's/androidx.compose:compose-bom:2026.08.00/androidx.compose:compose-bom:2025.12.00/' source/app/build.gradle.kts
+          sed -i 's/androidx.activity:activity-compose:1.13.0/androidx.activity:activity-compose:1.11.0/' source/app/build.gradle.kts
           sed -i 's/androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0/androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4/' source/app/build.gradle.kts
           sed -i 's/androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0/androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4/' source/app/build.gradle.kts
           sed -i '/android.builtInKotlin=false/d' source/gradle.properties
