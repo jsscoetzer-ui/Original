@@ -7,7 +7,6 @@ on:
     paths:
       - '.github/workflows/build-test-apk.yml'
       - 'ci/**'
-      - 'patches/**'
 
 jobs:
   build:
@@ -19,14 +18,20 @@ jobs:
 
       - name: Restore Android source
         run: |
-          mkdir -p source
+          rm -rf source v02patches source.zip v02-patches.zip
+          mkdir -p source v02patches
           cat ci/project.b64.* | base64 --decode > source.zip
           unzip -q source.zip -d source
+          base64 --decode ci/v02-patches.b64 > v02-patches.zip
+          unzip -q v02-patches.zip -d v02patches
           test -f source/settings.gradle.kts
+          test -f v02patches/ScanForegroundService.kt
+
           sed -i 's/id("com.android.application") version "9.4.0"/id("com.android.application") version "8.13.2"/' source/build.gradle.kts
           sed -i 's/compileSdk = 37/compileSdk = 36/' source/app/build.gradle.kts
           sed -i 's/targetSdk = 37/targetSdk = 36/' source/app/build.gradle.kts
-          sed -i 's/versionName = "0.1.0"/versionName = "0.1.1"/' source/app/build.gradle.kts
+          sed -i 's/versionCode = 1/versionCode = 2/' source/app/build.gradle.kts
+          sed -i 's/versionName = "0.1.0"/versionName = "0.2.0"/' source/app/build.gradle.kts
           sed -i 's/io.github.tdlibx:td-android:1.8.56-RC10/com.github.tdlibx:td:1.8.56/' source/app/build.gradle.kts
           sed -i 's/androidx.compose:compose-bom:2026.08.00/androidx.compose:compose-bom:2025.12.00/' source/app/build.gradle.kts
           sed -i 's/androidx.activity:activity-compose:1.13.0/androidx.activity:activity-compose:1.11.0/' source/app/build.gradle.kts
@@ -34,7 +39,7 @@ jobs:
           sed -i 's/androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0/androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4/' source/app/build.gradle.kts
           sed -i '/android.builtInKotlin=false/d' source/gradle.properties
           sed -i '/android.newDsl=false/d' source/gradle.properties
-          cp patches/TelegramScanner.kt source/app/src/main/java/za/co/originals/app/TelegramScanner.kt
+
           python3 - <<'PY'
           from pathlib import Path
 
@@ -63,15 +68,16 @@ jobs:
           hs = h.read_text()
           hs = hs.replace('longArrayOf(10, 50, 90).mapNotNull { pct ->', 'listOf(10L, 50L, 90L).mapNotNull { pct ->')
           h.write_text(hs)
-
-          m = Path('source/app/src/main/AndroidManifest.xml')
-          x = m.read_text()
-          x = x.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">', '<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    xmlns:tools="http://schemas.android.com/tools">')
-          x = x.replace('android:usesCleartextTraffic="false">', 'android:usesCleartextTraffic="false"\n        tools:replace="android:allowBackup,android:label">')
-          m.write_text(x)
           PY
-          grep -E 'compileSdk|targetSdk|versionName|com.github.tdlibx:td' source/app/build.gradle.kts
-          grep -n 'withTimeoutOrNull\|skipped slow' source/app/src/main/java/za/co/originals/app/TelegramScanner.kt
+
+          cp v02patches/*.kt source/app/src/main/java/za/co/originals/app/
+          cp v02patches/AndroidManifest.xml source/app/src/main/AndroidManifest.xml
+          sed -i 's/applicationVersion = "0.1.0"/applicationVersion = "0.2.0"/' source/app/src/main/java/za/co/originals/app/TelegramClientManager.kt
+
+          grep -E 'compileSdk|targetSdk|versionCode|versionName|com.github.tdlibx:td' source/app/build.gradle.kts
+          grep -n 'foregroundServiceType="dataSync"' source/app/src/main/AndroidManifest.xml
+          grep -n 'Start background scan\|LinearProgressIndicator(modifier' source/app/src/main/java/za/co/originals/app/MainActivity.kt
+          grep -n 'withTimeoutOrNull\|markChatComplete' source/app/src/main/java/za/co/originals/app/TelegramScanner.kt
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -83,6 +89,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+
+      - name: Reuse stable test signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: originals-debug-keystore-v1
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -103,7 +115,7 @@ jobs:
       - name: Upload test APK
         uses: actions/upload-artifact@v4
         with:
-          name: Originals-v0.1.1-test-apk
+          name: Originals-v0.2-background-apk
           path: |
             source/app/build/outputs/apk/debug/app-debug.apk
             source/app/build/outputs/apk/debug/app-debug.apk.sha256
