@@ -1,0 +1,57 @@
+name: Build FYNALIO beta APK
+
+on:
+  push:
+    branches:
+      - fynalio-apk
+    paths:
+      - "ci/fynalio-android-project.tar.gz"
+      - ".github/workflows/build-fynalio-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Extract FYNALIO Android project
+        run: tar -xzf ci/fynalio-android-project.tar.gz
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Build signed beta APK
+        working-directory: fynalio-android
+        run: gradle --no-daemon --stacktrace assembleRelease
+
+      - name: Prepare artifact
+        run: cp fynalio-android/app/build/outputs/apk/release/app-release.apk Fynalio-v0.1-beta.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fynalio-v0.1-beta
+          path: Fynalio-v0.1-beta.apk
+          if-no-files-found: error
+          retention-days: 30
