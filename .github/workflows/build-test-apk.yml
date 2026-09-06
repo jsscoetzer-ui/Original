@@ -27,8 +27,19 @@ jobs:
           sed -i 's/targetSdk = 37/targetSdk = 36/' source/app/build.gradle.kts
           sed -i '/android.builtInKotlin=false/d' source/gradle.properties
           sed -i '/android.newDsl=false/d' source/gradle.properties
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('source/app/build.gradle.kts')
+          s = p.read_text()
+          if 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget' not in s:
+              s = 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget\n\n' + s
+          s = s.replace('    kotlinOptions {\n        jvmTarget = "17"\n    }\n', '')
+          if '\nkotlin {\n    compilerOptions {' not in s:
+              s = s.replace('\ndependencies {\n', '\nkotlin {\n    compilerOptions {\n        jvmTarget.set(JvmTarget.JVM_17)\n    }\n}\n\ndependencies {\n')
+          p.write_text(s)
+          PY
           grep 'com.android.application' source/build.gradle.kts
-          grep -E 'compileSdk|targetSdk' source/app/build.gradle.kts
+          grep -E 'compileSdk|targetSdk|jvmTarget' source/app/build.gradle.kts
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
