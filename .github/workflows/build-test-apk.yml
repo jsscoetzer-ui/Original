@@ -25,7 +25,7 @@ jobs:
           sed -i 's/id("com.android.application") version "9.4.0"/id("com.android.application") version "8.13.2"/' source/build.gradle.kts
           sed -i 's/compileSdk = 37/compileSdk = 36/' source/app/build.gradle.kts
           sed -i 's/targetSdk = 37/targetSdk = 36/' source/app/build.gradle.kts
-          sed -i 's/io.github.tdlibx:td-android:1.8.56-RC10/io.github.tdlibx:td-android:1.8.56-RC9/' source/app/build.gradle.kts
+          sed -i 's/io.github.tdlibx:td-android:1.8.56-RC10/com.github.tdlibx:td:1.8.56/' source/app/build.gradle.kts
           sed -i 's/androidx.compose:compose-bom:2026.08.00/androidx.compose:compose-bom:2025.12.00/' source/app/build.gradle.kts
           sed -i 's/androidx.activity:activity-compose:1.13.0/androidx.activity:activity-compose:1.11.0/' source/app/build.gradle.kts
           sed -i 's/androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0/androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4/' source/app/build.gradle.kts
@@ -34,6 +34,7 @@ jobs:
           sed -i '/android.newDsl=false/d' source/gradle.properties
           python3 - <<'PY'
           from pathlib import Path
+
           p = Path('source/app/build.gradle.kts')
           s = p.read_text()
           if 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget' not in s:
@@ -45,6 +46,21 @@ jobs:
               s = s.replace('\ndependencies {\n', '\nconfigurations.all {\n    resolutionStrategy.force(\n        "androidx.core:core:1.17.0",\n        "androidx.core:core-ktx:1.17.0"\n    )\n}\n\ndependencies {\n')
           p.write_text(s)
 
+          settings = Path('source/settings.gradle.kts')
+          y = settings.read_text()
+          if 'https://jitpack.io' not in y:
+              marker = 'dependencyResolutionManagement {\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories {\n        google()\n        mavenCentral()\n'
+              replacement = marker + '        maven { url = uri("https://jitpack.io") }\n'
+              if marker not in y:
+                  raise SystemExit('Could not locate dependency repositories block')
+              y = y.replace(marker, replacement, 1)
+          settings.write_text(y)
+
+          h = Path('source/app/src/main/java/za/co/originals/app/Hashing.kt')
+          hs = h.read_text()
+          hs = hs.replace('longArrayOf(10, 50, 90).mapNotNull { pct ->', 'listOf(10L, 50L, 90L).mapNotNull { pct ->')
+          h.write_text(hs)
+
           m = Path('source/app/src/main/AndroidManifest.xml')
           x = m.read_text()
           x = x.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">', '<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    xmlns:tools="http://schemas.android.com/tools">')
@@ -52,7 +68,9 @@ jobs:
           m.write_text(x)
           PY
           grep 'com.android.application' source/build.gradle.kts
-          grep -E 'compileSdk|targetSdk|jvmTarget|td-android|compose-bom|activity-compose|lifecycle-viewmodel|androidx.core' source/app/build.gradle.kts
+          grep -E 'compileSdk|targetSdk|jvmTarget|com.github.tdlibx:td|compose-bom|activity-compose|lifecycle-viewmodel|androidx.core' source/app/build.gradle.kts
+          grep -n 'jitpack.io' source/settings.gradle.kts
+          grep -n 'listOf(10L' source/app/src/main/java/za/co/originals/app/Hashing.kt
           grep -E 'xmlns:tools|tools:replace' source/app/src/main/AndroidManifest.xml
 
       - name: Set up JDK 17
