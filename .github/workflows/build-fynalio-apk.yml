@@ -53,12 +53,12 @@ jobs:
           sha256sum fynalio-android/app/build/outputs/apk/release/app-release.apk
 
       - name: Prepare artifact
-        run: cp fynalio-android/app/build/outputs/apk/release/app-release.apk Fynalio-v0.1-beta.apk
+        run: cp fynalio-android/app/build/outputs/apk/release/app-release.apk Fynalio-v0.1.1-beta.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Fynalio-v0.1-beta
-          path: Fynalio-v0.1-beta.apk
+          name: Fynalio-v0.1.1-beta
+          path: Fynalio-v0.1.1-beta.apk
           if-no-files-found: error
           retention-days: 30
