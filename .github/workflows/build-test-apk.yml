@@ -44,9 +44,16 @@ jobs:
           if 'resolutionStrategy.force(' not in s:
               s = s.replace('\ndependencies {\n', '\nconfigurations.all {\n    resolutionStrategy.force(\n        "androidx.core:core:1.17.0",\n        "androidx.core:core-ktx:1.17.0"\n    )\n}\n\ndependencies {\n')
           p.write_text(s)
+
+          m = Path('source/app/src/main/AndroidManifest.xml')
+          x = m.read_text()
+          x = x.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">', '<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    xmlns:tools="http://schemas.android.com/tools">')
+          x = x.replace('android:usesCleartextTraffic="false">', 'android:usesCleartextTraffic="false"\n        tools:replace="android:allowBackup,android:label">')
+          m.write_text(x)
           PY
           grep 'com.android.application' source/build.gradle.kts
           grep -E 'compileSdk|targetSdk|jvmTarget|td-android|compose-bom|activity-compose|lifecycle-viewmodel|androidx.core' source/app/build.gradle.kts
+          grep -E 'xmlns:tools|tools:replace' source/app/src/main/AndroidManifest.xml
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
